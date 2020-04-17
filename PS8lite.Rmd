@@ -3,7 +3,7 @@ title: "Random Forests"
 date: "Last updated on `r Sys.Date()`"
 output:
   html_document: 
-    # code_folding: show
+    code_folding: hide
     df_print: kable
     highlight: tango
     number_sections: yes
@@ -29,6 +29,7 @@ library(tidyverse)
 library(janitor)
 library(skimr)
 library(randomForest)
+library(caret)
 
 # Set seed value of random number generator here:
 set.seed(76)
@@ -40,9 +41,6 @@ sample_submission <- read_csv("data/sample_submission.csv")
 ```
 
 Note above that `data/train.csv` is once again all the original training data with 1460 rows, unlike PS7 on LASSO where it only had 50 rows to  artificially create a situation where $p$ is very large relative to $n$.
-
-test
-
 
 
 ***
@@ -92,8 +90,8 @@ training <- training %>%
 
 Questions to ask yourself or discuss with your peers
 
-1. Why didn't I apply the same change to the `test` set?
-1. If I transformed the outcome variable now, what will I have to make sure to do later on?
+1. Why didn't I apply the same change to the `test` set? There is no "SalePrice" variable in the 'test' set. 
+1. If I transformed the outcome variable now, what will I have to make sure to do later on? You have to "de-transform" the variable so it aligns with your desired original outcome variable. 
 
 
 ## Select only numerical predictors
@@ -182,13 +180,19 @@ MiscVal + MoSold + YrSold" %>%
 ***
 
 
-
 # Fit a Random Forest model
 
 Fit one Random Forest model `model_rf` using any approach you want.
 
 ```{r}
+# Fitting directly
+model_rf <- randomForest(
+  form = model_formula,
+  data = training,
+  mtry = 2,
+  ntree = 100
 
+)
 ```
 
 
@@ -202,9 +206,17 @@ Fit one Random Forest model `model_rf` using any approach you want.
 Using `model_rf` make predictions and submit to Kaggle.
 
 ```{r}
+test <- test %>%
+  mutate(logSalePrice_hat = predict(object = model_rf, newdata = test),
+         SalePrice_hat = exp(logSalePrice_hat) - 1
+         )
 
+submission_rf <- test %>%
+  mutate(SalePrice = SalePrice_hat) %>%
+  select(Id, SalePrice)
+write_csv(submission_rf, "submission_rf.csv")
 ```
 
 
-![](images/score_screenshot_naive.png){ width=100% }
+![](images/score_screenshot_rf.png){ width=100% }
 
